@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import {Onboarding} from "../../lib/auth";
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,15 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-interface OnboardingData {
-  currentRole: string
-  experience: string
-  skills: string[]
-  interests: string[]
-  goals: string
-  preferredIndustries: string[]
-}
 
 const skillOptions = [
   "JavaScript",
@@ -82,13 +74,15 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [data, setData] = useState<OnboardingData>({
-    currentRole: "",
+
+  const [data, setData] = useState<Onboarding>({
+    currentrole: "",
     experience: "",
     skills: [],
     interests: [],
     goals: "",
-    preferredIndustries: [],
+    preferred_industries: [],
+    has_completed:false,
   })
 
   const totalSteps = 4
@@ -125,37 +119,51 @@ export default function OnboardingPage() {
   const handleIndustryToggle = (industry: string) => {
     setData((prev) => ({
       ...prev,
-      preferredIndustries: prev.preferredIndustries.includes(industry)
-        ? prev.preferredIndustries.filter((i) => i !== industry)
-        : [...prev.preferredIndustries, industry],
+      preferredIndustries: prev.preferred_industries.includes(industry)
+        ? prev.preferred_industries.filter((i) => i !== industry)
+        : [...prev.preferred_industries, industry],
     }))
   }
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const res = await fetch("http://localhost:5000/api/users/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          userId: user?.id,
+          onboarding: data,
+        }),
+      });
 
-    // Update user with onboarding completion
-    updateUser({
-      hasCompletedOnboarding: true,
-      // In a real app, you'd save the onboarding data
-    })
+      console.log(res.status, await res.text()); // check server response
 
-    router.push("/profile")
-  }
+      if (res.ok) {
+        updateUser({ onboarding: { ...data, has_completed: true } });
+        router.push("/profile"); // navigate only on success
+      } else {
+        console.error("Failed to save onboarding data");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return data.currentRole.trim() !== "" && data.experience !== ""
+        return data.currentrole.trim() !== "" && data.experience !== ""
       case 2:
         return data.skills.length > 0
       case 3:
         return data.interests.length > 0
       case 4:
-        return data.goals.trim() !== "" && data.preferredIndustries.length > 0
+        return data.goals.trim() !== "" && data.preferred_industries.length > 0
       default:
         return false
     }
@@ -224,7 +232,7 @@ export default function OnboardingPage() {
                   <Input
                     id="currentRole"
                     placeholder="e.g., Software Developer, Student, Marketing Manager"
-                    value={data.currentRole}
+                    value={data.currentrole}
                     onChange={(e) => setData((prev) => ({ ...prev, currentRole: e.target.value }))}
                   />
                 </div>
@@ -313,7 +321,7 @@ export default function OnboardingPage() {
                       <div key={industry} className="flex items-center space-x-2">
                         <Checkbox
                           id={industry}
-                          checked={data.preferredIndustries.includes(industry)}
+                          checked={data.preferred_industries.includes(industry)}
                           onCheckedChange={() => handleIndustryToggle(industry)}
                         />
                         <Label htmlFor={industry} className="text-sm font-normal cursor-pointer">
@@ -323,7 +331,7 @@ export default function OnboardingPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Selected: {data.preferredIndustries.length} industries
+                    Selected: {data.preferred_industries.length} industries
                   </p>
                 </div>
               </div>

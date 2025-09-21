@@ -7,11 +7,11 @@ import { LogOut, BarChart3, UserCircle } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 
 export function Navigation() {
-  const { user, signOut, signIn } = useAuth();
+  const { user, isLoading, signIn, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
+ 
   const handleGetStarted = async () => {
     if (!user) {
       await signIn()
@@ -27,6 +27,7 @@ export function Navigation() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
@@ -136,7 +137,7 @@ export function Navigation() {
               </>
             ) : (
               <Button
-                onClick={handleGetStarted}
+                onClick={signIn}
                 variant="outline"
                 size="sm"
                 className="text-white border-white/20 rounded-[5px] bg-black hover:bg-gray-500/20 hover:text-black transition-all duration-300 cursor-pointer"

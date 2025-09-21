@@ -1,5 +1,7 @@
 "use client"
 
+import {Onboarding,UserWithOnboarding} from "../../lib/auth";
+import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +23,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-// Mock data - in a real app, this would come from your backend
 const mockUserData = {
   skills: [
     { name: "JavaScript", level: 85, category: "Technical" },
@@ -91,7 +92,34 @@ const mockUserData = {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const [user, setUser] = useState<UserWithOnboarding | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserWithOnboarding = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/users/getUserWithOnboarding", {
+          method: "GET",
+          credentials: "include", // important if you're using cookies/session
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch user data");
+
+        const data = await res.json();
+        setUser(data);
+      } catch (err) {
+        console.error("Error fetching user with onboarding:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserWithOnboarding();
+  }, []);
+
+  if (loading) {
+  return <p>Loading...</p>;
+}
 
   if (!user) {
     return (
@@ -106,7 +134,10 @@ export default function ProfilePage() {
     )
   }
 
-  if (!user.hasCompletedOnboarding) {
+  if (loading) return <p>Loading...</p>;
+  if (!user) return <p>No user found</p>;
+
+  if (!user.onboarding.has_completed) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -138,7 +169,7 @@ export default function ProfilePage() {
             </Avatar> */}
             <p className="h-15 w-15 bg-black text-white rounded-full flex justify-center items-center">P</p>
             <div>
-              <h1 className="text-2xl font-bold">Welcome back, {user.name.split(" ")[0]}!</h1>
+              <h1 className="text-2xl font-bold">Welcome back, {user.name ? user.name.split(" ")[0] : "User"}!</h1>
               <p className="text-muted-foreground">Track your progress and discover new opportunities</p>
             </div>
           </div>

@@ -8,13 +8,13 @@ import { ArrowRight, Target, TrendingUp, Users, BookOpen, Award, CheckCircle, Sp
 import Link from "next/link"
 
 export default function HomePage() {
-  const { user, signIn, isLoading } = useAuth()
+  const { user, isLoading, signIn, signOut } = useAuth();
 
   const handleGetStarted = async () => {
-    if (!user) {
-      await signIn()
-    }
+    if (!user) await signIn();
   }
+
+  const hasCompletedOnboarding = user?.onboarding?.has_completed ?? false;
 
   return (
     <div className="min-h-screen">
@@ -53,8 +53,8 @@ export default function HomePage() {
                     size="lg"
                     className="gradient-primary rounded-[50px] text-white transition-all duration-300 shadow-xl hover:shadow-2xl px-8 py-6 text-md font-semibold"
                   >
-                    <Link href={user.hasCompletedOnboarding ? "/profile" : "/onboarding"}>
-                      {user.hasCompletedOnboarding ? "View Dashboard" : "Complete Setup"}
+                    <Link href={hasCompletedOnboarding ? "/profile" : "/onboarding"}>
+                      {hasCompletedOnboarding ? "View Dashboard" : "Complete Setup"}
                       <ArrowRight className="ml-3 h-5 w-5" />
                     </Link>
                   </Button>
@@ -141,7 +141,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
       <section id="features" className="py-32 bg-gradient-to-b from-background to-muted/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-6 mb-20 animate-fade-in">
@@ -332,7 +331,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       <section className="py-32 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -351,8 +350,8 @@ export default function HomePage() {
                   size="lg"
                   className="gradient-primary rounded-[10px] text-white hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl px-8 py-4 text-lg font-semibold hover-glow"
                 >
-                  <Link href={user.hasCompletedOnboarding ? "/profile" : "/onboarding"}>
-                    {user.hasCompletedOnboarding ? "Go to Dashboard" : "Complete Your Profile"}
+                  <Link href={isLoading ? "/profile" : "/onboarding"}>
+                    {isLoading ? "Go to Dashboard" : "Complete Your Profile"}
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Link>
                 </Button>
@@ -361,9 +360,9 @@ export default function HomePage() {
                   onClick={handleGetStarted}
                   size="lg"
                   className="gradient-primary rounded-[10px] text-white cursor-pointer transition-all duration-300 shadow-xl hover:shadow-2xl px-8 py-4 text-lg font-semibold hover-glow"
-                  disabled={isLoading}
+                  disabled={hasCompletedOnboarding}
                 >
-                  {isLoading ? "Signing In..." : "Start Your Journey"}
+                  {hasCompletedOnboarding ? "Signing In..." : "Start Your Journey"}
                   <ArrowRight className="ml-3 h-5 w-5" />
                 </Button>
               )}
