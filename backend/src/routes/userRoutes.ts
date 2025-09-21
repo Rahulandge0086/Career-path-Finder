@@ -109,6 +109,63 @@ router.post("/onboarding", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/assessments
+  router.get("/assessments", async (req: Request, res: Response) => {
+  try {
+  const { userId, answers, skillScores, recommendations, careerPaths } = req.body;
+    const result = await pool.query(
+      `SELECT a.id, a.created_at, r.skill_scores, r.recommendations, r.career_paths
+       FROM assessments a
+       LEFT JOIN assessment_results r ON a.id = r.assessment_id
+       WHERE a.user_id = $1
+       ORDER BY a.created_at DESC`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch assessments" });
+  }
+});
+
+// POST /api/assessments
+router.post("/assessments", async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any).id;
+    console.log(userId);
+    const { answers, skillScores, recommendations, careerPaths } = req.body;
+
+    // Insert assessment
+    const assessmentResult = await pool.query(
+      `INSERT INTO assessments (user_id) VALUES ($1) RETURNING id`,
+      [userId]
+    );
+    const assessmentId = assessmentResult.rows[0].id;
+
+    // Insert answers
+    for (const [questionId, answerIndex] of Object.entries(answers)) {
+      await pool.query(
+        `INSERT INTO assessment_answers (assessment_id, question_id, answer_index) VALUES ($1, $2, $3)`,
+        [assessmentId, Number(questionId), answerIndex]
+      );
+    }
+
+    // Insert results
+    await pool.query(
+      `INSERT INTO assessment_results (assessment_id, skill_scores, recommendations, career_paths) 
+       VALUES ($1, $2, $3, $4)`,
+      [assessmentId, JSON.stringify(skillScores),
+    JSON.stringify(recommendations),
+    JSON.stringify(careerPaths),]
+    );
+
+    res.status(201).json({ message: "Assessment saved", assessmentId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to save assessment" });
+  }
+});
 
 router.post("/", createUser);
 

@@ -6,6 +6,7 @@ import passport from "passport";
 
 import userRoutes from "./routes/userRoutes.js";
 import authRouter from "./routes/auth.js";
+import geminiRoutes from "./routes/geminiRoutes.js";
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
@@ -31,6 +32,8 @@ app.use(passport.session());
 app.get("/", (req, res) => {
   res.send("Backend is running!");
 });
+
+app.use("/api/gemini", geminiRoutes);
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRoutes);

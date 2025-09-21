@@ -14,7 +14,7 @@ export default function HomePage() {
     if (!user) await signIn();
   }
 
-  const hasCompletedOnboarding = user?.onboarding?.has_completed ?? false;
+  const hasCompletedOnboarding = user?.onboarding?.has_completed ?? true;
 
   return (
     <div className="min-h-screen">

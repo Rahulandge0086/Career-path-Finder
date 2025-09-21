@@ -161,9 +161,9 @@ export default function AssessmentPage() {
 
   const handleNext = () => {
     if (currentQuestion < assessmentQuestions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
+      setCurrentQuestion(currentQuestion + 1);
     } else {
-      calculateResults()
+      calculateResults();
     }
   }
 
@@ -203,6 +203,28 @@ export default function AssessmentPage() {
     // Generate recommendations based on scores
     const recommendations = generateRecommendations(skillScores)
     const careerPaths = generateCareerPaths(skillScores)
+
+    try {
+      const res = await fetch("http://localhost:5000/api/users/assessments", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          answers,
+          skillScores: skillScores,
+          recommendations: recommendations,
+          careerPaths: careerPaths,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save assessment");
+      console.log("Assessment saved successfully");
+    } catch (err) {
+      console.error(err);
+    }
 
     setResults({
       skillScores,

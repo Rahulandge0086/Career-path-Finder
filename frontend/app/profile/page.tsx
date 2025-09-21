@@ -1,6 +1,7 @@
 "use client"
 
-import {Onboarding,UserWithOnboarding} from "../../lib/auth";
+import { Onboarding, UserWithOnboarding } from "../../lib/auth";
+import { useGemini } from "@/hooks/useGemini";
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,10 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import CareerPathsDisplay from "../../components/CareerPathsDisplay";
+import { GeminiResponse } from "../../lib/auth";
+import ReactMarkdown from "react-markdown";
+
 import {
   Target,
   TrendingUp,
@@ -94,6 +99,62 @@ const mockUserData = {
 export default function ProfilePage() {
   const [user, setUser] = useState<UserWithOnboarding | null>(null);
   const [loading, setLoading] = useState(true);
+  const { generate, response, Loading, error } = useGemini();
+  const handleSubmit = async () => {
+    if (!user) return;
+
+    const prompt: string = `You are an expert career advisor and analyst. 
+You will receive a user's profile data including their current role, experience, skills, interests, goals, and preferred industries. 
+Your task is to suggest an optimal career path tailored to the user.
+
+Here is the user data:
+
+User:
+- Name: ${user.name}
+- Current Role: ${user.onboarding.currentrole}
+- Experience: ${user.onboarding.experience}
+- Skills: ${user.onboarding.skills.join(", ")}
+- Interests: ${user.onboarding.interests.join(", ")}
+- Goals: ${user.onboarding.goals}
+- Preferred Industries: ${user.onboarding.preferred_industries.join(", ")}
+- Has Completed Onboarding: ${user.onboarding.has_completed}
+
+Instructions:
+1. Analyze the user's skills, interests, goals, and preferred industries.
+2. Suggest 1-3 potential career paths that fit the user's profile.
+3. For each career path, provide:
+   - Suggested job titles
+   - Required skills (including skills the user already has and skills to develop)
+   - Recommended next steps or learning paths
+   - Potential industries to target
+4. Provide the output in clear, structured format like this:
+
+---
+
+### 1. [Career Path Title]
+**Suggested Job Titles:** title1, title2, title3  
+
+**Required Skills:**  
+- Existing: skill1, skill2, ...  
+- To Develop: skill3, skill4, ...  
+
+**Next Steps / Learning Goals:**  
+1. Step one (detailed)  
+2. Step two (detailed)  
+3. Step three (detailed)  
+
+**Industries:** industry1, industry2, industry3  
+
+---
+
+### 2. [Career Path Title]
+... (repeat the same format for other paths)
+
+Make sure each section is clearly separated with headings, line breaks, and bullets so it is easy to read on the frontend.
+`;
+
+    const response = await generate(prompt);
+  };
 
   useEffect(() => {
     const fetchUserWithOnboarding = async () => {
@@ -118,8 +179,8 @@ export default function ProfilePage() {
   }, []);
 
   if (loading) {
-  return <p>Loading...</p>;
-}
+    return <p>Loading...</p>;
+  }
 
   if (!user) {
     return (
@@ -185,6 +246,143 @@ export default function ProfilePage() {
               Settings
             </Button>
           </div>
+        </div>
+        <div className="p-6 mx-auto">
+          <div className="flex items-center justify-around py-5 gap-5">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">Generate Your Learning Path</h1>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="
+    relative
+    inline-flex
+    items-center
+    justify-center
+    px-6
+    py-3
+    rounded-full
+    font-semibold
+    text-white
+    bg-gradient-to-r from-purple-500 via-pink-500 to-red-500
+    shadow-lg
+    transform
+    transition
+    duration-300
+    hover:scale-101
+    hover:shadow-2xl
+    active:scale-95
+    disabled:opacity-50
+    disabled:cursor-not-allowed
+    focus:outline-none
+    focus:ring-4
+    focus:ring-pink-300
+  "
+            >
+              {Loading ? "Generating..." : "Generate"}
+            </button>
+          </div>
+
+
+          {error && <p className="text-red-500 mt-2">{error}</p>}
+          {response && (<div className="prose border bg-gray-300/10 border-gray-300 p-5 rounded-[10px]">
+            <ReactMarkdown>{response}</ReactMarkdown>
+          </div>)}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          {/* Name Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Name</CardTitle>
+              {/* You can add an icon if you want */}
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">{user.name}</div>
+              <p className="text-xs text-muted-foreground">User full name</p>
+            </CardContent>
+          </Card>
+
+          {/* Email Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Email</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">{user.email}</div>
+              <p className="text-xs text-muted-foreground">User email address</p>
+            </CardContent>
+          </Card>
+
+          {/* Current Role Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Current Role</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">{user.onboarding.currentrole || "N/A"}</div>
+              <p className="text-xs text-muted-foreground">Your current role</p>
+            </CardContent>
+          </Card>
+
+          {/* Experience Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Experience</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">{user.onboarding.experience || "N/A"}</div>
+              <p className="text-xs text-muted-foreground">Years of experience</p>
+            </CardContent>
+          </Card>
+
+          {/* Skills Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Skills</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">
+                {user.onboarding.skills?.join(", ") || "N/A"}
+              </div>
+              <p className="text-xs text-muted-foreground">Your skills</p>
+            </CardContent>
+          </Card>
+
+          {/* Interests Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Interests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">
+                {user.onboarding.interests?.join(", ") || "N/A"}
+              </div>
+              <p className="text-xs text-muted-foreground">Your interests</p>
+            </CardContent>
+          </Card>
+
+          {/* Goals Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Goals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">{user.onboarding.goals || "N/A"}</div>
+              <p className="text-xs text-muted-foreground">Your goals</p>
+            </CardContent>
+          </Card>
+
+          {/* Preferred Industries Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Preferred Industries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">
+                {user.onboarding.preferred_industries?.join(", ") || "N/A"}
+              </div>
+              <p className="text-xs text-muted-foreground">Industries you like</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
