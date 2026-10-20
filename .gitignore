@@ -47,3 +47,5 @@ override.tf.json
 Thumbs.db
 .vscode/
 .idea/
+
+ansible/inventory.ini
