@@ -12,16 +12,16 @@ export interface UserWithOnboarding {
   id: number;
   name: string;
   email: string;
-  googleid: string;
+  googleid?: string;
   created_at: string;
   onboarding: Onboarding;
 }
 
 export interface User {
   id: number
-  googleid: string
   name: string | null
   email: string | null
+  googleid?: string
   hasCompletedOnboarding?: boolean
   onboarding?: Onboarding;
 }

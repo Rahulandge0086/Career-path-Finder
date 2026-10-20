@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // fetch user from backend
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/auth/getUser", {
+        const res = await fetch("http://localhost:5001/api/auth/getUser", {
           credentials: "include",
         });
 
@@ -50,11 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = () => {
-    window.location.href = "http://localhost:5000/api/auth/google"; // redirect to Google login
+    window.location.href = "http://localhost:5001/api/auth/google"; // redirect to Google login
   };
 
   const signOut = async () => {
-    await fetch("http://localhost:5000/api/auth/logout", {
+    await fetch("http://localhost:5001/api/auth/logout", {
       method: "POST",
       credentials: "include",
     });

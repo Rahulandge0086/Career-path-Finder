@@ -10,7 +10,7 @@ export function useGemini() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5000/api/gemini/generate", {
+      const res = await fetch("http://localhost:5001/api/gemini/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

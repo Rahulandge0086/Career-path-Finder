@@ -9,7 +9,10 @@ router.get("/", getUsers);
 
 router.get("/getUserWithOnboarding", async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Please log in" });
+    }
 
     const result = await pool.query(
       `SELECT u.id, u.name, u.email, u.googleid,
@@ -52,10 +55,17 @@ router.get("/getUserWithOnboarding", async (req: Request, res: Response) => {
 
 
 router.post("/onboarding", async (req: Request, res: Response) => {
-   const { userId, onboarding } = req.body;
-   const { currentRole, experience, skills, interests, goals, preferredIndustries } = onboarding;
+  const userId = req.body.userId || (req.user as any)?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized: Please log in" });
+  }
+  const { onboarding } = req.body;
+  if (!onboarding) {
+    return res.status(400).json({ error: "Onboarding data is required" });
+  }
+  const { currentRole, experience, skills, interests, goals, preferredIndustries } = onboarding;
 
-  console.log("Onboarding query fired.", onboarding);
+  console.log("Onboarding query fired for user:", userId);
   try {
     // Check if onboarding record already exists
     const result = await pool.query(
@@ -110,9 +120,12 @@ router.post("/onboarding", async (req: Request, res: Response) => {
 });
 
 // GET /api/assessments
-  router.get("/assessments", async (req: Request, res: Response) => {
+router.get("/assessments", async (req: Request, res: Response) => {
   try {
-  const { userId, answers, skillScores, recommendations, careerPaths } = req.body;
+    const userId = (req.user as any)?.id || req.query.userId || req.body?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Please log in" });
+    }
     const result = await pool.query(
       `SELECT a.id, a.created_at, r.skill_scores, r.recommendations, r.career_paths
        FROM assessments a
@@ -132,8 +145,10 @@ router.post("/onboarding", async (req: Request, res: Response) => {
 // POST /api/assessments
 router.post("/assessments", async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
-    console.log(userId);
+    const userId = (req.user as any)?.id || req.body.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Please log in" });
+    }
     const { answers, skillScores, recommendations, careerPaths } = req.body;
 
     // Insert assessment

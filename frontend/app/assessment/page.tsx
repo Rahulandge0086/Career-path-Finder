@@ -205,7 +205,7 @@ export default function AssessmentPage() {
     const careerPaths = generateCareerPaths(skillScores)
 
     try {
-      const res = await fetch("http://localhost:5000/api/users/assessments", {
+      const res = await fetch("http://localhost:5001/api/users/assessments", {
         method: "POST",
         credentials: "include",
         headers: {
