@@ -35,16 +35,22 @@ jobs:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           set -e
-          echo "Creating SSH directory..."
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
 
-          echo "Writing SSH key..."
           printf '%s\n' "$EC2_SSH_KEY" > "$HOME/.ssh/ec2-key.pem"
           chmod 600 "$HOME/.ssh/ec2-key.pem"
 
-          echo "Checking EC2 SSH connectivity..."
-          ssh-keyscan -v -T 10 -H "$EC2_HOST" \
+          echo "Checking SSH port..."
+          if timeout 10 bash -c 'echo > /dev/tcp/$1/22' _ "$EC2_HOST"; then
+            echo "SSH port is reachable"
+          else
+            echo "SSH port is unreachable; check EC2 security group and EC2_HOST"
+            exit 1
+          fi
+
+          echo "Retrieving SSH host key..."
+          ssh-keyscan -T 10 -H "$EC2_HOST" \
             >> "$HOME/.ssh/known_hosts"
 
       - name: Create Ansible inventory
