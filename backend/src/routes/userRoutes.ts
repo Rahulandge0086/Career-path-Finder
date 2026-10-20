@@ -63,7 +63,12 @@ router.post("/onboarding", async (req: Request, res: Response) => {
   if (!onboarding) {
     return res.status(400).json({ error: "Onboarding data is required" });
   }
-  const { currentRole, experience, skills, interests, goals, preferredIndustries } = onboarding;
+  const currentRole = onboarding.currentRole || onboarding.currentrole || "";
+  const experience = onboarding.experience || "";
+  const skills = onboarding.skills || [];
+  const interests = onboarding.interests || [];
+  const goals = onboarding.goals || "";
+  const preferredIndustries = onboarding.preferredIndustries || onboarding.preferred_industries || [];
 
   console.log("Onboarding query fired for user:", userId);
   try {

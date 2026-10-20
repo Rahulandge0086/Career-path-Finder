@@ -12,9 +12,9 @@ export function Navigation() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
  
-  const handleGetStarted = async () => {
+  const handleGetStarted = () => {
     if (!user) {
-      await signIn()
+      signIn("login")
     }
   }
 
