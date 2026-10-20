@@ -140,7 +140,7 @@ export default function OnboardingPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("http://localhost:5001/api/users/onboarding", {
+      const res = await fetch("/api/users/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

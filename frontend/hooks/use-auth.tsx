@@ -4,7 +4,7 @@ import React, { useState, useEffect, createContext, useContext, useCallback } fr
 import { type User } from "@/lib/auth";
 import { AuthModal } from "@/components/auth-modal";
 
-const BACKEND_URL = "http://localhost:5001";
+const BACKEND_URL = "";
 
 export interface AuthResponse {
   success: boolean;

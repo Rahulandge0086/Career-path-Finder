@@ -159,7 +159,7 @@ Make sure each section is clearly separated with headings, line breaks, and bull
   useEffect(() => {
     const fetchUserWithOnboarding = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/users/getUserWithOnboarding", {
+        const res = await fetch("/api/users/getUserWithOnboarding", {
           method: "GET",
           credentials: "include", // important if you're using cookies/session
         });
