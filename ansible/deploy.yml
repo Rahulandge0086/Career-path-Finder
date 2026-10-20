@@ -4,27 +4,39 @@
   hosts: webservers
   become: true
 
+  vars:
+    app_dir: /home/ubuntu/Career-path-Finder
+
   tasks:
-    - name: Check Docker installation
+    - name: Verify Docker installation
       ansible.builtin.command: docker --version
       changed_when: false
 
-    - name: Check Docker Compose installation
-      ansible.builtin.command: docker compose version
+    - name: Preserve existing local code changes
+      ansible.builtin.command:
+        cmd: git stash push -m "preserved-before-automated-deployment"
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
+      changed_when: "'No local changes to save' not in result.stdout"
+      register: result
+
+    - name: Pull latest application code
+      ansible.builtin.command:
+        cmd: git pull --ff-only origin main
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
+
+    - name: Build and deploy application containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        build: always
+        state: present
+        recreate: always
+      become_user: ubuntu
+
+    - name: Verify application containers
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
       changed_when: false
-
-    - name: Ensure application directory exists
-      ansible.builtin.file:
-        path: /home/ubuntu/Career-path-Finder
-        state: directory
-        owner: ubuntu
-        group: ubuntu
-        mode: "0755"
-
-    - name: Copy Docker Compose configuration
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../docker-compose.yml"
-        dest: /home/ubuntu/Career-path-Finder/docker-compose.yml
-        owner: ubuntu
-        group: ubuntu
-        mode: "0644"
