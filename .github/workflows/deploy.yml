@@ -36,40 +36,65 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
 
+      - name: Verify AWS identity and security group
+        env:
+          SG_ID: ${{ secrets.EC2_SG_ID }}
+        run: |
+          set -euo pipefail
+          aws sts get-caller-identity
+          aws ec2 describe-security-groups \
+            --group-ids "$SG_ID" \
+            --query 'SecurityGroups[0].GroupId' \
+            --output text
+
       - name: Allow runner IP on port 22
         env:
           SG_ID: ${{ secrets.EC2_SG_ID }}
         run: |
           set -euo pipefail
+
           RUNNER_IP=$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]')
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
-          aws ec2 authorize-security-group-ingress \
+          echo "GitHub runner IP: $RUNNER_IP"
+
+          if ! aws ec2 authorize-security-group-ingress \
             --group-id "$SG_ID" \
             --protocol tcp \
             --port 22 \
-            --cidr "${RUNNER_IP}/32" || true
+            --cidr "${RUNNER_IP}/32" \
+            2> /tmp/sg-error.txt; then
+
+            if grep -q "InvalidPermission.Duplicate" /tmp/sg-error.txt; then
+              echo "Runner IP rule already exists."
+            else
+              cat /tmp/sg-error.txt
+              exit 1
+            fi
+          fi
 
       - name: Configure SSH
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          set -e
+          set -euo pipefail
+
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
 
           printf '%s\n' "$EC2_SSH_KEY" > "$HOME/.ssh/ec2-key.pem"
           chmod 600 "$HOME/.ssh/ec2-key.pem"
 
-          echo "Checking SSH port..."
-          if timeout 10 bash -c 'echo > /dev/tcp/$1/22' _ "$EC2_HOST"; then
-            echo "SSH port is reachable"
+          echo "Checking SSH port on $EC2_HOST..."
+
+          if timeout 15 bash -c 'echo > /dev/tcp/$1/22' _ "$EC2_HOST"; then
+            echo "SSH port is reachable."
           else
-            echo "SSH port is unreachable; check EC2 security group and EC2_HOST"
+            echo "ERROR: SSH port is unreachable."
+            echo "Check EC2_HOST, security group, and EC2 network settings."
             exit 1
           fi
 
-          echo "Retrieving SSH host key..."
           ssh-keyscan -T 10 -H "$EC2_HOST" \
             >> "$HOME/.ssh/known_hosts"
 
@@ -78,7 +103,9 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
+          set -euo pipefail
           mkdir -p ansible
+
           printf '[webservers]\nec2-server ansible_host=%s ansible_user=%s ansible_ssh_private_key_file=%s/.ssh/ec2-key.pem ansible_python_interpreter=/usr/bin/python3\n' \
             "$EC2_HOST" "$EC2_USER" "$HOME" \
             > ansible/ci-inventory.ini
