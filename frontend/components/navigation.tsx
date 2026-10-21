@@ -140,7 +140,7 @@ export function Navigation() {
                 onClick={signIn}
                 variant="outline"
                 size="sm"
-                className="text-white border-white/20 rounded-[5px] bg-black hover:bg-gray-500/20 hover:text-black transition-all duration-300 cursor-pointer"
+                className="text-white border-orange-400 rounded-[5px] bg-orange-500 hover:bg-orange-400 hover:text-white transition-all duration-300 cursor-pointer font-semibold"
               >
                 Sign In
               </Button>
