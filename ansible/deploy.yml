@@ -17,14 +17,16 @@
         cmd: git stash push -m "preserved-before-automated-deployment"
         chdir: "{{ app_dir }}"
       become_user: ubuntu
-      changed_when: "'No local changes to save' not in result.stdout"
       register: result
+      changed_when: "'No local changes to save' not in result.stdout"
 
     - name: Pull latest application code
       ansible.builtin.command:
         cmd: git pull --ff-only origin main
         chdir: "{{ app_dir }}"
       become_user: ubuntu
+      register: pull_result
+      changed_when: "'Already up to date.' not in pull_result.stdout"
 
     - name: Build and deploy application containers
       community.docker.docker_compose_v2:
