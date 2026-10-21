@@ -9,6 +9,10 @@ on:
 
 permissions:
   contents: read
+  id-token: write   # required for AWS OIDC
+
+env:
+  AWS_REGION: ap-southeast-2
 
 jobs:
   deploy:
@@ -28,22 +32,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible-core==2.18.6
           ansible-galaxy collection install community.docker
-      
-            - name: Allow runner IP on port 22
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Allow runner IP on port 22
         env:
           SG_ID: ${{ secrets.EC2_SG_ID }}
         run: |
           set -euo pipefail
-
           RUNNER_IP=$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]')
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
-
           aws ec2 authorize-security-group-ingress \
             --group-id "$SG_ID" \
             --protocol tcp \
             --port 22 \
-            --cidr "${RUNNER_IP}/32"
-      
+            --cidr "${RUNNER_IP}/32" || true
+
       - name: Configure SSH
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -83,3 +91,14 @@ jobs:
           ansible-playbook \
             -i ansible/ci-inventory.ini \
             ansible/deploy.yml
+
+      - name: Remove runner IP from security group
+        if: always() && env.RUNNER_IP != ''
+        env:
+          SG_ID: ${{ secrets.EC2_SG_ID }}
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_IP}/32" || true
